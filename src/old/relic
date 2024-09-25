@@ -1,0 +1,1440 @@
+
+// BEST ONE YET TO KEEP
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int		num_rays;
+// 	double	angle_step;
+// 	double	distance_to_plane;
+// 	double	ray_angle;
+// 	int		i;
+
+// 	num_rays = GAME_WIDTH;
+// 	angle_step = cub->player.fov / num_rays;
+// 	distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	i = 0;
+
+// 	while (i < num_rays)
+// 	{
+// 		// Initialize ray and perform DDA algorithm
+// 		double	ray_dx = cos(ray_angle);
+// 		double	ray_dy = sin(ray_angle);
+// 		double	delta_dist_x = fabs(1 / ray_dx);
+// 		double	delta_dist_y = fabs(1 / ray_dy);
+// 		int		map_x = (int)cub->player.pos_x;
+// 		int		map_y = (int)cub->player.pos_y;
+// 		double	side_dist_x;
+// 		double	side_dist_y;
+// 		int		step_x;
+// 		int		step_y;
+// 		int		side;
+// 		int		hit = 0;
+// 		double	epsilon = 0.0001;
+// Small epsilon value for handling intersections
+
+// 		// Calculate step and initial sideDist
+// 		if (ray_dx < 0)
+// 		{
+// 			step_x = -1;
+// 			side_dist_x = (cub->player.pos_x - map_x) * delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			step_x = 1;
+// 			side_dist_x = (map_x + 1.0 - cub->player.pos_x) * delta_dist_x;
+// 		}
+// 		if (ray_dy < 0)
+// 		{
+// 			step_y = -1;
+// 			side_dist_y = (cub->player.pos_y - map_y) * delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			step_y = 1;
+// 			side_dist_y = (map_y + 1.0 - cub->player.pos_y) * delta_dist_y;
+// 		}
+
+// 		// Perform DDA and choose which wall to render at intersections
+// 		while (!hit)
+// 		{
+// 			// Use epsilon to handle intersections more smoothly
+// 			if (fabs(map_x + 0.5 - cub->player.pos_x) < epsilon && fabs(map_y
+// + 0.5 - cub->player.pos_y) < epsilon)
+// 			{
+// 				// Prioritize walls based on ray direction at intersections
+// 				if (fabs(ray_dx) > fabs(ray_dy))
+// 				{
+// 					side_dist_x += delta_dist_x;
+// 					map_x += step_x;
+// 					side = 0; // Vertical wall
+// 				}
+// 				else
+// 				{
+// 					side_dist_y += delta_dist_y;
+// 					map_y += step_y;
+// 					side = 1; // Horizontal wall
+// 				}
+// 			}
+// 			else
+// 			{
+// 				// Continue with DDA to find which wall the ray hits first
+// 				if (side_dist_x < side_dist_y)
+// 				{
+// 					side_dist_x += delta_dist_x;
+// 					map_x += step_x;
+// 					side = 0; // Vertical wall
+// 				}
+// 				else
+// 				{
+// 					side_dist_y += delta_dist_y;
+// 					map_y += step_y;
+// 					side = 1; // Horizontal wall
+// 				}
+// 			}
+
+// 			// Check if ray has hit a wall
+// 			if (map_x < 0 || map_x >= cub->map.map_length_x || map_y < 0
+// || map_y >= cub->map.map_length_y)
+// 				break ;
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 				hit = 1;
+// 		}
+
+// 		// Calculate perpendicular distance to the wall
+// 		double perp_wall_dist;
+// 		if (side == 0)
+// 			perp_wall_dist = (map_x - cub->player.pos_x + (1 - step_x) / 2)
+// / ray_dx;
+// 		else
+// 			perp_wall_dist = (map_y - cub->player.pos_y + (1 - step_y) / 2)
+// / ray_dy;
+
+// 		// Correct for fisheye effect
+// 		perp_wall_dist *= cos(ray_angle - cub->player.angle);
+
+// 		// Calculate height of the wall slice
+// 		int wall_height = (int)((1.0 / perp_wall_dist) * distance_to_plane);
+// 		int start_y = (GAME_HEIGHT / 2) - (wall_height / 2);
+// 		int end_y = start_y + wall_height;
+
+// 		// Determine the correct texture to use
+// 		t_image *current_texture = select_texture(cub, side, ray_dx, ray_dy);
+
+// 		// Calculate the exact texture coordinate on the wall
+// 		double wall_x;
+// 		if (side == 0) // Vertical wall
+// 			wall_x = cub->player.pos_y + perp_wall_dist * ray_dy;
+// 		else // Horizontal wall
+// 			wall_x = cub->player.pos_x + perp_wall_dist * ray_dx;
+// 		wall_x -= floor(wall_x); // Get only the fractional part of wall_x
+
+// 		// Calculate texture_x coordinate
+// 		int texture_x = (int)(wall_x * (double)current_texture->img_width);
+// 		// Correct for texture flipping based on ray direction
+// 		if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+// 			texture_x = current_texture->img_width - texture_x - 1;
+// 		// Clamp texture_x to valid range
+// 		texture_x = texture_x < 0 ? 0 : (texture_x >= current_texture->img_width ? current_texture->img_width
+// - 1 : texture_x);
+// 		// Draw the vertical stripe on screen
+// 		int screen_x = MINIMAP_WIDTH + i;
+// 		for (int y = start_y; y < end_y; y++)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				int texture_y = ((y - start_y) * current_texture->img_height)
+// / wall_height;
+
+// 				// Clamp texture_y to valid range
+// 				texture_y = texture_y < 0 ? 0 : (texture_y >= current_texture->img_height ? current_texture->img_height
+// - 1 : texture_y);
+
+// 				// Get the pixel color from the texture
+// 				int color = get_pixel_color(current_texture, texture_x,
+// texture_y);
+
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(screen_x, y, &cub->mlx.img, color);
+// 			}
+// 		}
+// 		// Move to the next ray
+// 		ray_angle += angle_step;
+// 		i++;
+// 	}
+// 	return (0);
+// }
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int	y;
+
+// 	cub->v.num_rays = GAME_WIDTH;
+// 	cub->v.angle_step = cub->player.fov / cub->v.num_rays;
+// 	cub->v.distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	cub->v.ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	cub->v.i = 0;
+// 	while (cub->v.i < cub->v.num_rays)
+// 	{
+// 		// Initialize ray direction and DDA algorithm
+// 		cub->v.ray_dx = cos(cub->v.ray_angle);
+// 		cub->v.ray_dy = sin(cub->v.ray_angle);
+// 		cub->v.delta_dist_x = fabs(1 / cub->v.ray_dx);
+// 		cub->v.delta_dist_y = fabs(1 / cub->v.ray_dy);
+// 		cub->v.map_x = (int)cub->player.pos_x;
+// 		cub->v.map_y = (int)cub->player.pos_y;
+// 		cub->v.hit = 0;
+// 		// Calculate step and initial sideDist
+// 		if (cub->v.ray_dx < 0)
+// 		{
+// 			cub->v.step_x = -1;
+// 			cub->v.side_dist_x = (cub->player.pos_x - cub->v.map_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_x = 1;
+// 			cub->v.side_dist_x = (cub->v.map_x + 1.0 - cub->player.pos_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		if (cub->v.ray_dy < 0)
+// 		{
+// 			cub->v.step_y = -1;
+// 			cub->v.side_dist_y = (cub->player.pos_y - cub->v.map_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_y = 1;
+// 			cub->v.side_dist_y = (cub->v.map_y + 1.0 - cub->player.pos_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		// Perform DDA
+// 		while (!cub->v.hit)
+// 		{
+// 			if (cub->v.side_dist_x < cub->v.side_dist_y)
+// 			{
+// 				cub->v.side_dist_x += cub->v.delta_dist_x;
+// 				cub->v.map_x += cub->v.step_x;
+// 				cub->v.side = 0; // Vertical wall
+// 			}
+// 			else
+// 			{
+// 				cub->v.side_dist_y += cub->v.delta_dist_y;
+// 				cub->v.map_y += cub->v.step_y;
+// 				cub->v.side = 1; // Horizontal wall
+// 			}
+// 			if (cub->map.map[cub->v.map_y][cub->v.map_x] == '1')
+// 				cub->v.hit = 1;
+// 		}
+// 		// Calculate perpendicular distance to the wall
+// 		if (cub->v.side == 0)
+// 			cub->v.perp_wall_dist = (cub->v.map_x - cub->player.pos_x + (1
+// 						- cub->v.step_x) / 2) / cub->v.ray_dx;
+// 		else
+// 			cub->v.perp_wall_dist = (cub->v.map_y - cub->player.pos_y + (1
+// 						- cub->v.step_y) / 2) / cub->v.ray_dy;
+// 		// Correct for fisheye effect
+// 		// cub->v.perp_wall_dist *= cos(cub->v.ray_angle - cub->player.angle);
+// 		// Remove fisheye correction or tweak how it's applied if needed.
+// 		// Calculate height of the wall slice
+// 		cub->v.wall_height = (int)((1.0 / cub->v.perp_wall_dist)
+// 				* cub->v.distance_to_plane);
+// 		cub->v.start_y = (GAME_HEIGHT / 2) - (cub->v.wall_height / 2);
+// 		cub->v.end_y = cub->v.start_y + cub->v.wall_height;
+// 		// Determine the correct texture to use
+// 		cub->v.current_texture = select_texture(cub, cub->v.side, cub->v.ray_dx,
+// 				cub->v.ray_dy);
+// 		// Calculate `wall_x` uniformly
+// 		if (cub->v.side == 0) // Vertical wall
+// 		{
+// 			cub->v.hit_x = cub->player.pos_x + cub->v.perp_wall_dist
+// 				* cub->v.ray_dx;
+// 			cub->v.hit_y = cub->player.pos_y + cub->v.perp_wall_dist
+// 				* cub->v.ray_dy;
+// 		}
+// 		else // Horizontal wall
+// 		{
+// 			cub->v.hit_x = cub->player.pos_x + cub->v.perp_wall_dist
+// 				* cub->v.ray_dx;
+// 			cub->v.hit_y = cub->player.pos_y + cub->v.perp_wall_dist
+// 				* cub->v.ray_dy;
+// 		}
+// 		// Calculate `wall_x` (how far along the wall the hit occurred,between 0 and 1)
+// 		cub->v.wall_x = (cub->v.side == 0) ? cub->v.hit_y
+// 			- floor(cub->v.hit_y) : cub->v.hit_x - floor(cub->v.hit_x);
+// 		// Calculate texture_x coordinate based on wall_x
+// 		cub->v.texture_x = (int)(cub->v.wall_x
+// 				* (double)cub->v.current_texture->img_width);
+// 		if ((cub->v.side == 0 && cub->v.ray_dx > 0) || (cub->v.side == 1
+// 				&& cub->v.ray_dy < 0))
+// 			cub->v.texture_x = cub->v.current_texture->img_width
+// 				- cub->v.texture_x - 1;
+// 		// Clamp texture_x to valid range
+// 		if (cub->v.texture_x < 0)
+// 			cub->v.texture_x = 0;
+// 		if (cub->v.texture_x >= cub->v.current_texture->img_width)
+// 			cub->v.texture_x = cub->v.current_texture->img_width - 1;
+// 		// Draw the vertical stripe on screen
+// 		cub->v.screen_x = MINIMAP_WIDTH + cub->v.i;
+// 		y = cub->v.start_y;
+// 		while (y < cub->v.end_y)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				cub->v.texture_y = ((y - cub->v.start_y)
+// 						* cub->v.current_texture->img_height)
+// 					/ cub->v.wall_height;
+// 				// Clamp texture_y to valid range
+// 				if (cub->v.texture_y < 0)
+// 					cub->v.texture_y = 0;
+// 				if (cub->v.texture_y >= cub->v.current_texture->img_height)
+// 					cub->v.texture_y = cub->v.current_texture->img_height - 1;
+// 				// Get the pixel color from the texture
+// 				cub->v.color = get_pixel_color(cub->v.current_texture,
+// 						cub->v.texture_x, cub->v.texture_y);
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(cub->v.screen_x, y, &cub->mlx.img, cub->v.color);
+// 			}
+// 			y++;
+// 		}
+// 		// Move to the next ray
+// 		cub->v.ray_angle += cub->v.angle_step;
+// 		cub->v.i++;
+// 	}
+// 	return (0);
+// }
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int	y;
+
+// 	cub->v.num_rays = GAME_WIDTH;
+// 	cub->v.angle_step = cub->player.fov / cub->v.num_rays;
+// 	cub->v.distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	cub->v.ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	cub->v.i = 0;
+// 	while (cub->v.i < cub->v.num_rays)
+// 	{
+// 		// Initialize ray direction and DDA algorithm
+// 		cub->v.ray_dx = cos(cub->v.ray_angle);
+// 		cub->v.ray_dy = sin(cub->v.ray_angle);
+// 		cub->v.delta_dist_x = fabs(1 / cub->v.ray_dx);
+// 		cub->v.delta_dist_y = fabs(1 / cub->v.ray_dy);
+// 		cub->v.map_x = (int)cub->player.pos_x;
+// 		cub->v.map_y = (int)cub->player.pos_y;
+// 		cub->v.hit = 0;
+// 		// Calculate step and initial sideDist
+// 		if (cub->v.ray_dx < 0)
+// 		{
+// 			cub->v.step_x = -1;
+// 			cub->v.side_dist_x = (cub->player.pos_x - cub->v.map_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_x = 1;
+// 			cub->v.side_dist_x = (cub->v.map_x + 1.0 - cub->player.pos_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		if (cub->v.ray_dy < 0)
+// 		{
+// 			cub->v.step_y = -1;
+// 			cub->v.side_dist_y = (cub->player.pos_y - cub->v.map_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_y = 1;
+// 			cub->v.side_dist_y = (cub->v.map_y + 1.0 - cub->player.pos_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		// Perform DDA
+// 		while (!cub->v.hit)
+// 		{
+// 			if (cub->v.side_dist_x < cub->v.side_dist_y)
+// 			{
+// 				cub->v.side_dist_x += cub->v.delta_dist_x;
+// 				cub->v.map_x += cub->v.step_x;
+// 				cub->v.side = 0; // Vertical wall
+// 			}
+// 			else
+// 			{
+// 				cub->v.side_dist_y += cub->v.delta_dist_y;
+// 				cub->v.map_y += cub->v.step_y;
+// 				cub->v.side = 1; // Horizontal wall
+// 			}
+// 			if (cub->map.map[cub->v.map_y][cub->v.map_x] == '1')
+// 				cub->v.hit = 1;
+// 		}
+// 		// Calculate perpendicular distance to the wall
+// 		if (cub->v.side == 0)
+// 			cub->v.perp_wall_dist = (cub->v.map_x - cub->player.pos_x + (1
+// 						- cub->v.step_x) / 2) / cub->v.ray_dx;
+// 		else
+// 			cub->v.perp_wall_dist = (cub->v.map_y - cub->player.pos_y + (1
+// 						- cub->v.step_y) / 2) / cub->v.ray_dy;
+
+// 		// Calculate height of the wall slice
+// 		cub->v.wall_height = (int)((1.0 / cub->v.perp_wall_dist)
+// 				* cub->v.distance_to_plane);
+// 		cub->v.start_y = (GAME_HEIGHT / 2) - (cub->v.wall_height / 2);
+// 		cub->v.end_y = cub->v.start_y + cub->v.wall_height;
+// 		// Determine the correct texture to use
+// 		cub->v.current_texture = select_texture(cub, cub->v.side, cub->v.ray_dx, cub->v.ray_dy);
+		
+// 		// Calculate wall_x uniformly, regardless of side
+// 		if (cub->v.side == 0) // Vertical wall
+// 			cub->v.wall_x = cub->player.pos_y + cub->v.perp_wall_dist * cub->v.ray_dy;
+// 		else // Horizontal wall
+// 			cub->v.wall_x = cub->player.pos_x + cub->v.perp_wall_dist * cub->v.ray_dx;
+
+// 		cub->v.wall_x -= floor(cub->v.wall_x); // Get the fractional part
+
+// 		// Calculate texture_x coordinate based on wall_x
+// 		cub->v.texture_x = (int)(cub->v.wall_x * (double)cub->v.current_texture->img_width);
+// 		if ((cub->v.side == 0 && cub->v.ray_dx > 0) || (cub->v.side == 1 && cub->v.ray_dy < 0))
+// 			cub->v.texture_x = cub->v.current_texture->img_width - cub->v.texture_x - 1;
+
+// 		// Clamp texture_x to valid range
+// 		if (cub->v.texture_x < 0)
+// 			cub->v.texture_x = 0;
+// 		if (cub->v.texture_x >= cub->v.current_texture->img_width)
+// 			cub->v.texture_x = cub->v.current_texture->img_width - 1;
+
+// 		// Draw the vertical stripe on screen
+// 		cub->v.screen_x = MINIMAP_WIDTH + cub->v.i;
+// 		y = cub->v.start_y;
+// 		while (y < cub->v.end_y)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				cub->v.texture_y = ((y - cub->v.start_y) * cub->v.current_texture->img_height) / cub->v.wall_height;
+				
+// 				// Clamp texture_y to valid range
+// 				if (cub->v.texture_y < 0)
+// 					cub->v.texture_y = 0;
+// 				if (cub->v.texture_y >= cub->v.current_texture->img_height)
+// 					cub->v.texture_y = cub->v.current_texture->img_height - 1;
+
+// 				// Get the pixel color from the texture
+// 				cub->v.color = get_pixel_color(cub->v.current_texture, cub->v.texture_x, cub->v.texture_y);
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(cub->v.screen_x, y, &cub->mlx.img, cub->v.color);
+// 			}
+// 			y++;
+// 		}
+// 		// Move to the next ray
+// 		cub->v.ray_angle += cub->v.angle_step;
+// 		cub->v.i++;
+// 	}
+// 	return (0);
+// }
+
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int	y;
+
+// 	cub->v.num_rays = GAME_WIDTH;
+// 	cub->v.angle_step = cub->player.fov / cub->v.num_rays;
+// 	cub->v.distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	cub->v.ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	cub->v.i = 0;
+// 	while (cub->v.i < cub->v.num_rays)
+// 	{
+// 		// Initialize ray direction and DDA algorithm
+// 		cub->v.ray_dx = cos(cub->v.ray_angle);
+// 		cub->v.ray_dy = sin(cub->v.ray_angle);
+// 		cub->v.delta_dist_x = fabs(1 / cub->v.ray_dx);
+// 		cub->v.delta_dist_y = fabs(1 / cub->v.ray_dy);
+// 		cub->v.map_x = (int)cub->player.pos_x;
+// 		cub->v.map_y = (int)cub->player.pos_y;
+// 		cub->v.hit = 0;
+// 		// Calculate step and initial sideDist
+// 		if (cub->v.ray_dx < 0)
+// 		{
+// 			cub->v.step_x = -1;
+// 			cub->v.side_dist_x = (cub->player.pos_x - cub->v.map_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_x = 1;
+// 			cub->v.side_dist_x = (cub->v.map_x + 1.0 - cub->player.pos_x)
+// 				* cub->v.delta_dist_x;
+// 		}
+// 		if (cub->v.ray_dy < 0)
+// 		{
+// 			cub->v.step_y = -1;
+// 			cub->v.side_dist_y = (cub->player.pos_y - cub->v.map_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			cub->v.step_y = 1;
+// 			cub->v.side_dist_y = (cub->v.map_y + 1.0 - cub->player.pos_y)
+// 				* cub->v.delta_dist_y;
+// 		}
+// 		// Perform DDA
+// 		while (!cub->v.hit)
+// 		{
+// 			if (cub->v.side_dist_x < cub->v.side_dist_y)
+// 			{
+// 				cub->v.side_dist_x += cub->v.delta_dist_x;
+// 				cub->v.map_x += cub->v.step_x;
+// 				cub->v.side = 0; // Vertical wall
+// 			}
+// 			else
+// 			{
+// 				cub->v.side_dist_y += cub->v.delta_dist_y;
+// 				cub->v.map_y += cub->v.step_y;
+// 				cub->v.side = 1; // Horizontal wall
+// 			}
+// 			if (cub->map.map[cub->v.map_y][cub->v.map_x] == '1')
+// 				cub->v.hit = 1;
+// 		}
+// 		// Calculate perpendicular distance to the wall
+// 		if (cub->v.side == 0)
+// 			cub->v.perp_wall_dist = (cub->v.map_x - cub->player.pos_x + (1
+// 						- cub->v.step_x) / 2) / cub->v.ray_dx;
+// 		else
+// 			cub->v.perp_wall_dist = (cub->v.map_y - cub->player.pos_y + (1
+// 						- cub->v.step_y) / 2) / cub->v.ray_dy;
+// 			// Soft fisheye correction (use a smaller factor to reduce distortion)
+// 		double angle_diff = cub->v.ray_angle - cub->player.angle;
+// 		cub->v.perp_wall_dist *= cos(angle_diff * 0.33);  // Applying a milder correction
+
+// 		// Calculate height of the wall slice
+// 		cub->v.wall_height = (int)((1.0 / cub->v.perp_wall_dist)
+// 				* cub->v.distance_to_plane);
+// 		cub->v.start_y = (GAME_HEIGHT / 2) - (cub->v.wall_height / 2);
+// 		cub->v.end_y = cub->v.start_y + cub->v.wall_height;
+// 		// Determine the correct texture to use
+// 		cub->v.current_texture = select_texture(cub, cub->v.side, cub->v.ray_dx, cub->v.ray_dy);
+		
+// 		// Calculate wall_x uniformly, regardless of side
+// 		if (cub->v.side == 0) // Vertical wall
+// 			cub->v.wall_x = cub->player.pos_y + cub->v.perp_wall_dist * cub->v.ray_dy;
+// 		else // Horizontal wall
+// 			cub->v.wall_x = cub->player.pos_x + cub->v.perp_wall_dist * cub->v.ray_dx;
+
+// 		cub->v.wall_x -= floor(cub->v.wall_x); // Get the fractional part
+
+// 		// Calculate texture_x coordinate based on wall_x
+// 		cub->v.texture_x = (int)(cub->v.wall_x * (double)cub->v.current_texture->img_width);
+// 		if ((cub->v.side == 0 && cub->v.ray_dx > 0) || (cub->v.side == 1 && cub->v.ray_dy < 0))
+// 			cub->v.texture_x = cub->v.current_texture->img_width - cub->v.texture_x - 1;
+
+// 		// Clamp texture_x to valid range
+// 		if (cub->v.texture_x < 0)
+// 			cub->v.texture_x = 0;
+// 		if (cub->v.texture_x >= cub->v.current_texture->img_width)
+// 			cub->v.texture_x = cub->v.current_texture->img_width - 1;
+
+// 		// Draw the vertical stripe on screen
+// 		cub->v.screen_x = MINIMAP_WIDTH + cub->v.i;
+// 		y = cub->v.start_y;
+// 		while (y < cub->v.end_y)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				cub->v.texture_y = ((y - cub->v.start_y) * cub->v.current_texture->img_height) / cub->v.wall_height;
+				
+// 				// Clamp texture_y to valid range
+// 				if (cub->v.texture_y < 0)
+// 					cub->v.texture_y = 0;
+// 				if (cub->v.texture_y >= cub->v.current_texture->img_height)
+// 					cub->v.texture_y = cub->v.current_texture->img_height - 1;
+
+// 				// Get the pixel color from the texture
+// 				cub->v.color = get_pixel_color(cub->v.current_texture, cub->v.texture_x, cub->v.texture_y);
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(cub->v.screen_x, y, &cub->mlx.img, cub->v.color);
+// 			}
+// 			y++;
+// 		}
+// 		// Move to the next ray
+// 		cub->v.ray_angle += cub->v.angle_step;
+// 		cub->v.i++;
+// 	}
+// 	return (0);
+// }
+
+//BEFORE LAST COMMIT
+
+
+// void	ft_cast_ray(t_cub *cub, int color)
+// {
+// 	int		num_rays;
+// 	double	ray_angle;
+// 	double	ray_x, ray_y;
+// 	double	ray_dx, ray_dy;
+// 	double	eps = 0.01;  // Step size for ray movement
+// 	double  angle_eps;
+// 	int		map_x, map_y;
+// 	int i;
+	
+// 	num_rays = 120;
+// 	angle_eps = cub->player.fov / num_rays;
+// 	i = 0;
+// 	while (i < num_rays)
+// 	{
+// 		// Set the angle to point directly upwards
+// 		ray_angle = cub->player.angle - (cub->player.fov / 2);  // -90 degrees in radians, pointing upwards
+// 		// Calculate the center of the player's position in minimap coordinates
+// 		ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x);
+// 		ray_y = (cub->player.pos_y * MINIMAP_HEIGHT / cub->map.map_length_y);
+// 		// Calculate the direction of the ray
+// 		ray_dx = cos(ray_angle);
+// 		ray_dy = sin(ray_angle);
+// 		map_x = (int)(ray_x / (MINIMAP_WIDTH / cub->map.map_length_x));
+// 		map_y = (int)(ray_y / (MINIMAP_HEIGHT / cub->map.map_length_y));
+// 		while(cub->map.map[map_y][map_x] != '1' && ray_x > 0 && ray_x < MINIMAP_WIDTH && ray_y > 0 && ray_y < MINIMAP_HEIGHT)
+// 		{
+// 			my_pixel_put((int)ray_x, (int)ray_y, &cub->mlx.img, color);
+// 			// Move the ray forward
+// 			ray_x += ray_dx * eps;
+// 			ray_y += ray_dy * eps;
+// 			map_x = (int)(ray_x / (MINIMAP_WIDTH / cub->map.map_length_x));
+// 			map_y = (int)(ray_y / (MINIMAP_HEIGHT / cub->map.map_length_y));
+// 		}
+// 		i++;
+// 		ray_angle = ray_angle + angle_eps;
+// 	}
+// 	// Final drawing to update the window with the new ray
+// 	mlx_put_image_to_window(cub->mlx.mlx, cub->mlx.win, cub->mlx.img.img, 0, 0);
+// }
+
+// void	ft_cast_ray(t_cub *cub, int color)
+// {
+// 	int		num_rays;
+// 	double	ray_angle;
+// 	double	angle_eps;
+// 	double	ray_x;
+// 	double	ray_y;
+// 	double	ray_dx;
+// 	double	ray_dy;
+// 	double	eps;
+// 	int		map_x;
+// 	int		map_y;
+// 	int		hit_x_scaled;
+// 	int		hit_y_scaled;
+// 	int		start_x;
+// 	int		start_y;
+
+// 	int i; // index increment
+// 	// Calculate the size of each cell in the minimap
+// 	// Calculate the player's centered position in pixel coordinates on the minimap
+// 	// before loop
+// 	map_x = 0;
+// 	map_y = 0;
+// 	ray_x = 0.0;
+// 	ray_y = 0.0;
+// 	ray_dx = 0.0;
+// 	ray_dy = 0.0;
+// 	num_rays = 120; // fixed value, could come from a formula. careful.
+// 	angle_eps = cub->player.fov / num_rays;
+// 	ray_angle = (cub->player.angle) - (cub->player.fov / 2);
+// 	eps = 0.01;
+// 	// Start of casting num_rays
+// 	i = 0;
+// 	while (i < num_rays)
+// 	{
+// 		// first making ray coming from player's centered position.
+// 		ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x)
+// 			+ (MINIMAP_WIDTH / cub->map.map_length_x / 2);
+// 		ray_y = (cub->player.pos_y * MINIMAP_HEIGHT / cub->map.map_length_y)
+// 			+ (MINIMAP_HEIGHT / cub->map.map_length_y / 2);
+// 		ray_dx = cos(ray_angle);
+// 		ray_dy = sin(ray_angle);
+// 		printf("Ray %d - Position: (%f, %f) -> Map Cell: (%d, %d)\n", i, ray_x,
+// 			ray_y, map_x, map_y);
+// 		fflush(stdout); // Ensure immediate output
+// 		while (ray_x >= 0 && ray_x < cub->map.map_length_x && ray_y >= 0
+// 			&& ray_y < cub->map.map_length_y)
+// 		{
+// 			map_x = (int)ray_x;
+// 			map_y = (int)ray_y;
+// 			printf("Ray %d - Position: (%f, %f) -> Map Cell: (%d, %d)\n", i,
+// 				ray_x, ray_y, map_x, map_y);
+// 			fflush(stdout); // Ensure immediate output
+// 			// Check if the ray has hit a wall
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 			{
+// 				// Calculate the scaled coordinates of the hit point for the minimap
+// 				hit_x_scaled = ray_x * (MINIMAP_WIDTH / cub->map.map_length_x);
+// 				hit_y_scaled = ray_y * (MINIMAP_HEIGHT / cub->map.map_length_y);
+// 				// Draw the ray from the player's position to the hit point
+// 				start_x = (cub->player.pos_x * MINIMAP_WIDTH)
+// 					/ cub->map.map_length_x + (MINIMAP_WIDTH
+// 						/ cub->map.map_length_x) / 2;
+// 				start_y = (cub->player.pos_y * MINIMAP_HEIGHT)
+// 					/ cub->map.map_length_y + (MINIMAP_HEIGHT
+// 						/ cub->map.map_length_y) / 2;
+// 				while (start_x != hit_x_scaled || start_y != hit_y_scaled)
+// 				{
+// 					my_pixel_put(start_x, start_y, &cub->mlx.img, color);
+// 					if (start_x < hit_x_scaled)
+// 						start_x++;
+// 					else if (start_x > hit_x_scaled)
+// 						start_x--;
+// 					if (start_y < hit_y_scaled)
+// 						start_y++;
+// 					else if (start_y > hit_y_scaled)
+// 						start_y--;
+// 				}
+// 				break ; // Stop the ray when it hits a wall
+// 			}
+// 			ray_x += ray_dx * eps;
+// 			ray_y += ray_dy * eps;
+// 		}
+// 		ray_angle += angle_eps;
+// 		i++;
+// 	}
+// }
+
+// void	ft_draw_line_up(t_cub *cub, int color)
+// {
+// 	// Calculate the size of each cell in the minimap
+// 	int cell_width = MINIMAP_WIDTH / cub->map.map_length_x;
+// 	int cell_height = MINIMAP_HEIGHT / cub->map.map_length_y;
+// 	// Calculate the player's centered position in pixel coordinates on the minimap
+// 	int start_x = (cub->player.pos_x * cell_width);
+// 	int start_y = (cub->player.pos_y * cell_height);
+// 	// Adjust start_x and start_y to be the center of the player's square
+// 	start_x += cell_width / 2;
+// 	start_y += cell_height / 2;
+
+// 	// Set the length of the line (you can adjust this value as needed)
+// 	int line_length = 50;  // Draw 50 pixels upwards
+// 	int end_y = start_y - line_length;
+
+// 	// Draw the line from the start position to the end position
+// 	for (int y = start_y; y > end_y; y--)
+// 	{
+// 		if (y < 0) break ;  // Stop if we go off the top edge of the minimap
+// 		my_pixel_put(start_x, y, &cub->mlx.img, color);
+// 	}
+// }
+
+// void	ft_cast_ray(t_cub *cub, int color)
+// {
+// 	int		num_rays = 120;  // Number of rays to cast
+// 	double	ray_angle;
+// 	double	angle_step;
+// 	double	ray_x, ray_y, ray_dx, ray_dy;
+// 	int		map_x, map_y;
+// 	double	step_size = 0.01; // Smaller step size for finer ray movement
+// 	double	pos_x_scaled, pos_y_scaled, end_x_scaled, end_y_scaled;
+
+// 	// Calculate the angle between each ray
+// 	angle_step = cub->player.fov / num_rays;
+// 	// Start at the leftmost ray in the player's field of view
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+
+// 	// Player's position scaled for the minimap
+// 	pos_x_scaled = cub->player.pos_x * (MINIMAP_WIDTH / cub->map.map_length_x);
+// 	pos_y_scaled = cub->player.pos_y * (MINIMAP_HEIGHT / cub->map.map_length_y);
+
+// 	// Cast each ray
+// 	for (int i = 0; i < num_rays; i++)
+// 	{
+// 		// Initialize the ray at the player's position
+// 		ray_x = cub->player.pos_x;
+// 		ray_y = cub->player.pos_y;
+// 		// Calculate the direction of the ray
+// 		ray_dx = cos(ray_angle);
+// 		ray_dy = sin(ray_angle);
+
+// 		// Reset distance to wall for this ray
+
+// 		// Move the ray forward until it hits a wall
+// 		while (ray_x >= 0 && ray_x < cub->map.map_length_x &&
+// 				ray_y >= 0 && ray_y < cub->map.map_length_y)
+// 		{
+// 			// Calculate the grid position the ray is currently in
+// 			map_x = (int)ray_x;
+// 			map_y = (int)ray_y;
+
+// 			// Check if the ray has hit a wall
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 			{
+// 				// Calculate the endpoint of the ray in minimap coordinates
+// 				end_x_scaled = ray_x * (MINIMAP_WIDTH / cub->map.map_length_x);
+// 				end_y_scaled = ray_y * (MINIMAP_HEIGHT / cub->map.map_length_y);
+
+// 				// Draw the ray from the player's position to the hit point
+// 				double t = 0.0;
+// 				while (t < 1.0)
+// 				{
+// 					int x = pos_x_scaled + t * (end_x_scaled - pos_x_scaled);
+// 					int y = pos_y_scaled + t * (end_y_scaled - pos_y_scaled);
+// 					my_pixel_put(x, y, &cub->mlx.img, color);
+// 					t += step_size; // Move forward along the ray
+// 				}
+// 				break ;
+// 			}
+
+// 			// Move the ray forward
+// 			ray_x += ray_dx * step_size;
+// 			ray_y += ray_dy * step_size;
+// 		}
+
+// 		// Move to the next ray angle
+// 		ray_angle += angle_step;
+// 	}
+// }
+
+
+// void	ft_cast_single_ray(t_cub *cub, int color)
+// {
+// 	double	ray_angle;
+// 	double	ray_x, ray_y;
+// 	double	ray_dx, ray_dy;
+// 	double	eps = 0.01;  // Step size for ray movement
+// 	int		map_x, map_y;
+
+// 	// Set the angle to point directly upwards
+// 	ray_angle = -M_PI / 2;  // -90 degrees in radians, pointing upwards
+// 	// Calculate the center of the player's position in minimap coordinates
+// 	// ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x) +
+// 	// 		(MINIMAP_WIDTH / cub->map.map_length_x) / 2;
+// 	// ray_y = (cub->player.pos_y * MINIMAP_HEIGHT / cub->map.map_length_y) +
+// 	// 		(MINIMAP_HEIGHT / cub->map.map_length_y) / 2;
+// 	ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x);
+// 	ray_y = (cub->player.pos_y * MINIMAP_HEIGHT / cub->map.map_length_y);
+// 	// Calculate the direction of the ray
+// 	ray_dx = cos(ray_angle);
+// 	ray_dy = sin(ray_angle);
+// 	while (1)
+// 	{
+// 		// Map cell in which the ray currently is
+// 		map_x = (int)(ray_x / (MINIMAP_WIDTH / cub->map.map_length_x));
+// 		map_y = (int)(ray_y / (MINIMAP_HEIGHT / cub->map.map_length_y));
+
+// 		// Debugging output
+// 		printf("Ray Position: (%f, %f) -> Map Cell: (%d, %d)\n", ray_x, ray_y, map_x, map_y);
+// 		fflush(stdout);
+
+// 		// Check if the ray hits a wall
+// 		if (cub->map.map[map_y][map_x] == '1')
+// 		{
+// 			// Stop at the wall and draw the ray
+// 			break;
+// 		}
+
+// 		// Draw the ray as it moves
+// 		my_pixel_put((int)ray_x, (int)ray_y, &cub->mlx.img, color);
+
+// 		// Move the ray forward
+// 		ray_x += ray_dx * eps;
+// 		ray_y += ray_dy * eps;
+
+// 		// Stop if the ray goes out of bounds
+// 		if (ray_x < 0 || ray_x >= MINIMAP_WIDTH || ray_y < 0 || ray_y >= MINIMAP_HEIGHT)
+// 			break;
+// 	}
+
+// 	// Final drawing to update the window with the new ray
+// 	mlx_put_image_to_window(cub->mlx.mlx, cub->mlx.win, cub->mlx.img.img, 0, 0);
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int		num_rays;
+// 	double	angle_step;
+// 	double	distance_to_plane;
+// 	double	ray_angle;
+// 	int		i;
+// 	double	ray_dx;
+// 	double	ray_dy;
+// 	double	delta_dist_x;
+// 	double	delta_dist_y;
+// 	int		map_x;
+// 	int		map_y;
+// 	double	side_dist_x;
+// 	double	side_dist_y;
+// 	int		step_x;
+// 	int		step_y;
+// 	int		side;
+// 	int		hit;
+// 	double	perp_wall_dist;
+// 	int		wall_height;
+// 	int		start_y;
+// 	int		end_y;
+// 	t_image	*current_texture;
+// 	double	wall_x;
+// 	int		texture_x;
+// 	int		screen_x;
+// 	int		texture_y;
+// 	int		color;
+
+// 	num_rays = GAME_WIDTH;
+// 	angle_step = cub->player.fov / num_rays;
+// 	distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	i = 0;
+// 	while (i < num_rays)
+// 	{
+// 		ray_dx = cos(ray_angle);
+// 		ray_dy = sin(ray_angle);
+// 		delta_dist_x = fabs(1 / ray_dx);
+// 		delta_dist_y = fabs(1 / ray_dy);
+// 		map_x = (int)cub->player.pos_x;
+// 		map_y = (int)cub->player.pos_y;
+// 		if (ray_dx < 0)
+// 		{
+// 			step_x = -1;
+// 			side_dist_x = (cub->player.pos_x - map_x) * delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			step_x = 1;
+// 			side_dist_x = (map_x + 1.0 - cub->player.pos_x) * delta_dist_x;
+// 		}
+// 		if (ray_dy < 0)
+// 		{
+// 			step_y = -1;
+// 			side_dist_y = (cub->player.pos_y - map_y) * delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			step_y = 1;
+// 			side_dist_y = (map_y + 1.0 - cub->player.pos_y) * delta_dist_y;
+// 		}
+// 		hit = 0;
+// 		while (!hit)
+// 		{
+// 			if (side_dist_x < side_dist_y)
+// 			{
+// 				side_dist_x += delta_dist_x;
+// 				map_x += step_x;
+// 				side = 0;
+// 			}
+// 			else
+// 			{
+// 				side_dist_y += delta_dist_y;
+// 				map_y += step_y;
+// 				side = 1;
+// 			}
+// 			if (map_x < 0 || map_x >= cub->map.map_length_x || map_y < 0
+// 				|| map_y >= cub->map.map_length_y)
+// 				break ;
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 				hit = 1;
+// 		}
+// 		if (side == 0)
+// 			perp_wall_dist = (map_x - cub->player.pos_x + (1 - step_x) / 2)
+// 				/ ray_dx;
+// 		else
+// 			perp_wall_dist = (map_y - cub->player.pos_y + (1 - step_y) / 2)
+// 				/ ray_dy;
+// 		perp_wall_dist *= cos(ray_angle - cub->player.angle);
+// 		wall_height = (int)((1.0 / perp_wall_dist) * distance_to_plane);
+// 		start_y = (GAME_HEIGHT / 2) - (wall_height / 2);
+// 		end_y = start_y + wall_height;
+// 		current_texture = select_texture(cub, side, ray_dx, ray_dy);
+// // Calculate the exact texture coordinate
+// if (side == 0) // Vertical wall
+//     wall_x = cub->player.pos_y + perp_wall_dist * ray_dy;
+// else // Horizontal wall
+//     wall_x = cub->player.pos_x + perp_wall_dist * ray_dx;
+
+// // Normalize wall_x to get the fractional part only (0.0 to 1.0)
+// wall_x -= floor(wall_x);
+
+// // Calculate texture_x using the fractional wall_x and the texture width
+//  texture_x = (int)(wall_x * (double)current_texture->img_width);
+
+// // Handle edge cases where texture_x may go out of bounds
+// if (texture_x < 0) texture_x = 0;
+// if (texture_x >= current_texture->img_width) texture_x = current_texture->img_width - 1;
+
+// // Correct for texture flipping based on ray direction
+// if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+//     texture_x = current_texture->img_width - texture_x - 1;
+// 		if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+// 			texture_x = current_texture->img_width - texture_x - 1;
+// 		screen_x = MINIMAP_WIDTH + i;
+// 		for (int y = start_y; y < end_y; y++)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				texture_y = ((y - start_y) * current_texture->img_height)
+// 					/ wall_height;
+// 				color = get_pixel_color(current_texture, texture_x, texture_y);
+// 				my_pixel_put(screen_x, y, &cub->mlx.img, color);
+// 			}
+// 		}
+// 		ray_angle += angle_step;
+// 		i++;
+// 	}
+// 	return (0);
+// }
+
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int		num_rays;
+// 	double	angle_step;
+// 	double	distance_to_plane;
+// 	double	ray_angle;
+// 	int		i;
+
+// 	num_rays = GAME_WIDTH;
+// 	angle_step = cub->player.fov / num_rays;
+// 	distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	i = 0;
+
+// 	while (i < num_rays)
+// 	{
+// 		// Initialize ray and perform DDA algorithm
+// 		double	ray_dx = cos(ray_angle);
+// 		double	ray_dy = sin(ray_angle);
+// 		double	delta_dist_x = fabs(1 / ray_dx);
+// 		double	delta_dist_y = fabs(1 / ray_dy);
+// 		int		map_x = (int)cub->player.pos_x;
+// 		int		map_y = (int)cub->player.pos_y;
+// 		double	side_dist_x;
+// 		double	side_dist_y;
+// 		int		step_x;
+// 		int		step_y;
+// 		int		side;
+// 		int		hit = 0;
+
+// 		// Calculate step and initial sideDist
+// 		if (ray_dx < 0)
+// 		{
+// 			step_x = -1;
+// 			side_dist_x = (cub->player.pos_x - map_x) * delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			step_x = 1;
+// 			side_dist_x = (map_x + 1.0 - cub->player.pos_x) * delta_dist_x;
+// 		}
+
+// 		if (ray_dy < 0)
+// 		{
+// 			step_y = -1;
+// 			side_dist_y = (cub->player.pos_y - map_y) * delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			step_y = 1;
+// 			side_dist_y = (map_y + 1.0 - cub->player.pos_y) * delta_dist_y;
+// 		}
+
+// 		// Perform DDA
+// 		while (!hit)
+// 		{
+// 			if (side_dist_x < side_dist_y)
+// 			{
+// 				side_dist_x += delta_dist_x;
+// 				map_x += step_x;
+// 				side = 0;
+// 			}
+// 			else
+// 			{
+// 				side_dist_y += delta_dist_y;
+// 				map_y += step_y;
+// 				side = 1;
+// 			}
+
+// 			// Check if ray has hit a wall
+// 			if (map_x < 0 || map_x >= cub->map.map_length_x || map_y < 0 || map_y >= cub->map.map_length_y)
+// 				break;
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 				hit = 1;
+// 		}
+
+// 		// Calculate perpendicular distance to the wall
+// 		double perp_wall_dist;
+// 		if (side == 0)
+// 		{
+// 			perp_wall_dist = (map_x - cub->player.pos_x + (1 - step_x) / 2) / ray_dx;
+// 		}
+// 		else
+// 		{
+// 			perp_wall_dist = (map_y - cub->player.pos_y + (1 - step_y) / 2) / ray_dy;
+// 		}
+
+// 		// Correct for fisheye effect
+// 		perp_wall_dist *= cos(ray_angle - cub->player.angle);
+
+// 		// Calculate height of the wall slice
+// 		int wall_height = (int)((1.0 / perp_wall_dist) * distance_to_plane);
+// 		int start_y = (GAME_HEIGHT / 2) - (wall_height / 2);
+// 		int end_y = start_y + wall_height;
+
+// 		// Determine the correct texture to use
+// 		t_image *current_texture = select_texture(cub, side, ray_dx, ray_dy);
+
+// 		// Calculate the exact texture coordinate on the wall
+// 		double wall_x;
+// 		if (side == 0) // Vertical wall
+// 		{
+// 			wall_x = cub->player.pos_y + perp_wall_dist * ray_dy;
+// 		}
+// 		else // Horizontal wall
+// 		{
+// 			wall_x = cub->player.pos_x + perp_wall_dist * ray_dx;
+// 		}
+// 		wall_x -= floor(wall_x); // Get only the fractional part of wall_x
+
+// 		// Calculate texture_x coordinate
+// 		int texture_x = (int)(wall_x * (double)current_texture->img_width);
+
+// 		// Correct for texture flipping based on ray direction
+// 		if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+// 		{
+// 			texture_x = current_texture->img_width - texture_x - 1;
+// 		}
+
+// 		// Clamp texture_x to valid range
+// 		if (texture_x < 0)
+// 		{
+// 			texture_x = 0;
+// 		}
+// 		else
+// 		{
+// 			while (texture_x >= current_texture->img_width)
+// 			{
+// 				texture_x = current_texture->img_width - 1;
+// 			}
+// 		}
+
+// 		// Draw the vertical stripe on screen
+// 		int screen_x = MINIMAP_WIDTH + i;
+// 		int y = start_y;
+// 		while (y < end_y)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				int texture_y = ((y - start_y) * current_texture->img_height) / wall_height;
+
+// 				// Clamp texture_y to valid range
+// 				if (texture_y < 0)
+// 				{
+// 					texture_y = 0;
+// 				}
+// 				else
+// 				{
+// 					while (texture_y >= current_texture->img_height)
+// 					{
+// 						texture_y = current_texture->img_height - 1;
+// 					}
+// 				}
+
+// 				// Get the pixel color from the texture
+// 				int color = get_pixel_color(current_texture, texture_x, texture_y);
+
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(screen_x, y, &cub->mlx.img, color);
+// 			}
+// 			y++;
+// 		}
+
+// 		// Move to the next ray
+// 		ray_angle += angle_step;
+// 		i++;
+// 	}
+// 	return (0);
+// }
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int		num_rays;
+// 	double	angle_step;
+// 	double	distance_to_plane;
+// 	double	ray_angle;
+// 	int		i;
+
+// 	num_rays = GAME_WIDTH;
+// 	angle_step = cub->player.fov / num_rays;
+// 	distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	i = 0;
+
+// 	while (i < num_rays)
+// 	{
+// 		// Initialize ray and perform DDA algorithm
+// 		double	ray_dx = cos(ray_angle);
+// 		double	ray_dy = sin(ray_angle);
+// 		double	delta_dist_x = fabs(1 / ray_dx);
+// 		double	delta_dist_y = fabs(1 / ray_dy);
+// 		int		map_x = (int)cub->player.pos_x;
+// 		int		map_y = (int)cub->player.pos_y;
+// 		double	side_dist_x;
+// 		double	side_dist_y;
+// 		int		step_x;
+// 		int		step_y;
+// 		int		side;
+// 		int		hit = 0;
+
+// 		// Calculate step and initial sideDist
+// 		if (ray_dx < 0)
+// 		{
+// 			step_x = -1;
+// 			side_dist_x = (cub->player.pos_x - map_x) * delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			step_x = 1;
+// 			side_dist_x = (map_x + 1.0 - cub->player.pos_x) * delta_dist_x;
+// 		}
+// 		if (ray_dy < 0)
+// 		{
+// 			step_y = -1;
+// 			side_dist_y = (cub->player.pos_y - map_y) * delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			step_y = 1;
+// 			side_dist_y = (map_y + 1.0 - cub->player.pos_y) * delta_dist_y;
+// 		}
+
+// 		// Perform DDA
+// 		while (!hit)
+// 		{
+// 			if (side_dist_x < side_dist_y)
+// 			{
+// 				side_dist_x += delta_dist_x;
+// 				map_x += step_x;
+// 				side = 0;
+// 			}
+// 			else
+// 			{
+// 				side_dist_y += delta_dist_y;
+// 				map_y += step_y;
+// 				side = 1;
+// 			}
+
+// 			// Check if ray has hit a wall
+// 			if (map_x < 0 || map_x >= cub->map.map_length_x || map_y < 0 || map_y >= cub->map.map_length_y)
+// 				break;
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 				hit = 1;
+// 		}
+
+// 		// Calculate perpendicular distance to the wall
+// 		double perp_wall_dist;
+// 		if (side == 0)
+// 			perp_wall_dist = (map_x - cub->player.pos_x + (1 - step_x) / 2) / ray_dx;
+// 		else
+// 			perp_wall_dist = (map_y - cub->player.pos_y + (1 - step_y) / 2) / ray_dy;
+
+// 		// Correct for fisheye effect
+// 		perp_wall_dist *= cos(ray_angle - cub->player.angle);
+
+// 		// Calculate height of the wall slice
+// 		int wall_height = (int)((1.0 / perp_wall_dist) * distance_to_plane);
+// 		int start_y = (GAME_HEIGHT / 2) - (wall_height / 2);
+// 		int end_y = start_y + wall_height;
+
+// 		// Determine the correct texture to use
+// 		t_image *current_texture = select_texture(cub, side, ray_dx, ray_dy);
+
+// 		// Calculate the exact texture coordinate on the wall
+// 		double wall_x;
+// 		if (side == 0) // Vertical wall
+// 			wall_x = cub->player.pos_y + perp_wall_dist * ray_dy;
+// 		else // Horizontal wall
+// 			wall_x = cub->player.pos_x + perp_wall_dist * ray_dx;
+// 		wall_x -= floor(wall_x); // Get only the fractional part of wall_x
+
+// 		// Calculate texture_x coordinate
+// 		int texture_x = (int)(wall_x * (double)current_texture->img_width);
+
+// 		// Correct for texture flipping based on ray direction
+// 		if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+// 			texture_x = current_texture->img_width - texture_x - 1;
+
+// 		// Clamp texture_x to valid range
+// 		texture_x = texture_x < 0 ? 0 : (texture_x >= current_texture->img_width ? current_texture->img_width - 1 : texture_x);
+
+// 		// Draw the vertical stripe on screen
+// 		int screen_x = MINIMAP_WIDTH + i;
+// 		for (int y = start_y; y < end_y; y++)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				int texture_y = ((y - start_y) * current_texture->img_height) / wall_height;
+
+// 				// Clamp texture_y to valid range
+// 				texture_y = texture_y < 0 ? 0 : (texture_y >= current_texture->img_height ? current_texture->img_height - 1 : texture_y);
+
+// 				// Get the pixel color from the texture
+// 				int color = get_pixel_color(current_texture, texture_x, texture_y);
+
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(screen_x, y, &cub->mlx.img, color);
+// 			}
+// 		}
+
+// 		// Move to the next ray
+// 		ray_angle += angle_step;
+// 		i++;
+// 	}
+// 	return (0);
+// }
+
+// int	ft_draw_game(t_cub *cub)
+// {
+// 	int		num_rays;
+// 	double	angle_step;
+// 	double	distance_to_plane;
+// 	double	ray_angle;
+// 	int		i;
+
+// 	num_rays = GAME_WIDTH;
+// 	angle_step = cub->player.fov / num_rays;
+// 	distance_to_plane = (GAME_WIDTH / 2) / tan(cub->player.fov / 2);
+// 	ray_angle = cub->player.angle - (cub->player.fov / 2);
+// 	i = 0;
+
+// 	while (i < num_rays)
+// 	{
+// 		// Initialize ray and perform DDA algorithm
+// 		double	ray_dx = cos(ray_angle);
+// 		double	ray_dy = sin(ray_angle);
+// 		double	delta_dist_x = fabs(1 / ray_dx);
+// 		double	delta_dist_y = fabs(1 / ray_dy);
+// 		int		map_x = (int)cub->player.pos_x;
+// 		int		map_y = (int)cub->player.pos_y;
+// 		double	side_dist_x;
+// 		double	side_dist_y;
+// 		int		step_x;
+// 		int		step_y;
+// 		int		side;
+// 		int		hit = 0;
+
+// 		// Calculate step and initial sideDist
+// 		if (ray_dx < 0)
+// 		{
+// 			step_x = -1;
+// 			side_dist_x = (cub->player.pos_x - map_x) * delta_dist_x;
+// 		}
+// 		else
+// 		{
+// 			step_x = 1;
+// 			side_dist_x = (map_x + 1.0 - cub->player.pos_x) * delta_dist_x;
+// 		}
+// 		if (ray_dy < 0)
+// 		{
+// 			step_y = -1;
+// 			side_dist_y = (cub->player.pos_y - map_y) * delta_dist_y;
+// 		}
+// 		else
+// 		{
+// 			step_y = 1;
+// 			side_dist_y = (map_y + 1.0 - cub->player.pos_y) * delta_dist_y;
+// 		}
+
+// 		// Perform DDA and select which wall to render at intersection
+// 		while (!hit)
+// 		{
+// 			// Choose the smaller distance, i.e., the first wall hit
+// 			if (side_dist_x < side_dist_y)
+// 			{
+// 				side_dist_x += delta_dist_x;
+// 				map_x += step_x;
+// 				side = 0; // Vertical wall
+// 			}
+// 			else
+// 			{
+// 				side_dist_y += delta_dist_y;
+// 				map_y += step_y;
+// 				side = 1; // Horizontal wall
+// 			}
+
+// 			// Check if ray has hit a wall
+// 			if (map_x < 0 || map_x >= cub->map.map_length_x || map_y < 0 || map_y >= cub->map.map_length_y)
+// 				break;
+// 			if (cub->map.map[map_y][map_x] == '1')
+// 				hit = 1;
+// 		}
+
+// 		// Calculate perpendicular distance to the wall
+// 		double perp_wall_dist;
+// 		if (side == 0)
+// 			perp_wall_dist = (map_x - cub->player.pos_x + (1 - step_x) / 2) / ray_dx;
+// 		else
+// 			perp_wall_dist = (map_y - cub->player.pos_y + (1 - step_y) / 2) / ray_dy;
+
+// 		// Correct for fisheye effect
+// 		perp_wall_dist *= cos(ray_angle - cub->player.angle);
+
+// 		// Calculate height of the wall slice
+// 		int wall_height = (int)((1.0 / perp_wall_dist) * distance_to_plane);
+// 		int start_y = (GAME_HEIGHT / 2) - (wall_height / 2);
+// 		int end_y = start_y + wall_height;
+
+// 		// Determine the correct texture to use
+// 		t_image *current_texture = select_texture(cub, side, ray_dx, ray_dy);
+
+// 		// Calculate the exact texture coordinate on the wall
+// 		double wall_x;
+// 		if (side == 0) // Vertical wall
+// 			wall_x = cub->player.pos_y + perp_wall_dist * ray_dy;
+// 		else // Horizontal wall
+// 			wall_x = cub->player.pos_x + perp_wall_dist * ray_dx;
+// 		wall_x -= floor(wall_x); // Get only the fractional part of wall_x
+
+// 		// Calculate texture_x coordinate
+// 		int texture_x = (int)(wall_x * (double)current_texture->img_width);
+
+// 		// Correct for texture flipping based on ray direction
+// 		if ((side == 0 && ray_dx > 0) || (side == 1 && ray_dy < 0))
+// 			texture_x = current_texture->img_width - texture_x - 1;
+
+// 		// Clamp texture_x to valid range
+// 		texture_x = texture_x < 0 ? 0 : (texture_x >= current_texture->img_width ? current_texture->img_width - 1 : texture_x);
+
+// 		// Draw the vertical stripe on screen
+// 		int screen_x = MINIMAP_WIDTH + i;
+// 		for (int y = start_y; y < end_y; y++)
+// 		{
+// 			if (y >= 0 && y < GAME_HEIGHT)
+// 			{
+// 				// Calculate texture_y coordinate
+// 				int texture_y = ((y - start_y) * current_texture->img_height) / wall_height;
+
+// 				// Clamp texture_y to valid range
+// 				texture_y = texture_y < 0 ? 0 : (texture_y >= current_texture->img_height ? current_texture->img_height - 1 : texture_y);
+
+// 				// Get the pixel color from the texture
+// 				int color = get_pixel_color(current_texture, texture_x, texture_y);
+
+// 				// Put the pixel color on the screen
+// 				my_pixel_put(screen_x, y, &cub->mlx.img, color);
+// 			}
+// 		}
+
+// 		// Move to the next ray
+// 		ray_angle += angle_step;
+// 		i++;
+// 	}
+// 	return (0);
+// }

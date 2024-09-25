@@ -6,18 +6,18 @@
 /*   By: nkermani <nkermani@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/22 02:01:06 by nkermani          #+#    #+#             */
-/*   Updated: 2024/08/22 02:29:18 by nkermani         ###   ########.fr       */
+/*   Updated: 2024/09/16 14:46:19 by nkermani         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "cub3d.h"
 
-int print_map(t_cub	cub)
+int	print_map(t_cub cub)
 {
-    int i;
-    int j;
-    
-    i = 0;
+	int	i;
+	int	j;
+
+	i = 0;
 	while (i < cub.map.map_length_y)
 	{
 		j = 0;
@@ -26,8 +26,8 @@ int print_map(t_cub	cub)
 			printf("%c", cub.map.map[i][j]);
 			j++;
 		}
-		printf("\n"); // Move to the next line after printing each row
+		printf("\n");
 		i++;
 	}
-    return (0);
+	return (0);
 }

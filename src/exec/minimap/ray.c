@@ -6,51 +6,63 @@
 /*   By: nkermani <nkermani@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/15 16:24:41 by nkermani          #+#    #+#             */
-/*   Updated: 2024/08/24 23:08:39 by nkermani         ###   ########.fr       */
+/*   Updated: 2024/09/16 14:39:47 by nkermani         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "cub3d.h"
 
+static void	initialize_ray(t_cub *cub)
+{
+	cub->map.ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x)
+		- (MINIMAP_WIDTH / cub->map.map_length_x) / 2;
+	cub->map.ray_y = (cub->player.pos_y * MINIMAP_HEIGHT
+			/ cub->map.map_length_y) - (MINIMAP_HEIGHT / cub->map.map_length_y)
+		/ 2;
+	cub->map.ray_dx = cos(cub->map.ray_angle);
+	cub->map.ray_dy = sin(cub->map.ray_angle);
+	cub->map.map_x = (int)(cub->map.ray_x / (MINIMAP_WIDTH
+				/ cub->map.map_length_x));
+	cub->map.map_y = (int)(cub->map.ray_y / (MINIMAP_HEIGHT
+				/ cub->map.map_length_y));
+}
+
+static void	cast_single_ray(t_cub *cub, int color)
+{
+	while (cub->map.map[cub->map.map_y][cub->map.map_x] != '1'
+		&& cub->map.ray_x > 0 && cub->map.ray_x < MINIMAP_WIDTH
+		&& cub->map.ray_y > 0 && cub->map.ray_y < MINIMAP_HEIGHT)
+	{
+		my_pixel_put((int)cub->map.ray_x, (int)cub->map.ray_y, &cub->mlx.img,
+			color);
+		cub->map.ray_x += cub->map.ray_dx * cub->map.eps;
+		cub->map.ray_y += cub->map.ray_dy * cub->map.eps;
+		cub->map.map_x = (int)(cub->map.ray_x / (MINIMAP_WIDTH
+					/ cub->map.map_length_x));
+		cub->map.map_y = (int)(cub->map.ray_y / (MINIMAP_HEIGHT
+					/ cub->map.map_length_y));
+	}
+}
+
+static void	update_ray_angle(t_cub *cub)
+{
+	cub->map.ray_angle += cub->map.angle_eps;
+}
+
 void	ft_cast_ray(t_cub *cub, int color)
 {
-	int		num_rays;
-	double	ray_angle;
-	double	angle_eps;
-	int		i;
+	int	i;
 
-	num_rays = 240;
-	double ray_x, ray_y;
-	double ray_dx, ray_dy;
-	double eps = 0.01; // Step size for ray movement
-	int map_x, map_y;
-	angle_eps = cub->player.fov / num_rays;
-	ray_angle = cub->player.angle - (cub->player.fov / 2);
-		// Start angle for the leftmost ray
 	i = 0;
-	while (i < num_rays)
+	cub->map.num_rays = 400;
+	cub->map.eps = 0.02;
+	cub->map.angle_eps = cub->player.fov / cub->map.num_rays;
+	cub->map.ray_angle = cub->player.angle - (cub->player.fov / 2);
+	while (i < cub->map.num_rays)
 	{
-		// Calculate the center of the player's position in minimap coordinates
-		ray_x = (cub->player.pos_x * MINIMAP_WIDTH / cub->map.map_length_x) - (MINIMAP_WIDTH / cub->map.map_length_x) / 2;
-		ray_y = (cub->player.pos_y * MINIMAP_HEIGHT / cub->map.map_length_y) - (MINIMAP_HEIGHT / cub->map.map_length_y) / 2;
-		// Calculate the direction of the ray
-		ray_dx = cos(ray_angle);
-		ray_dy = sin(ray_angle);
-		// Initial map position based on the ray's starting point
-		map_x = (int)(ray_x / (MINIMAP_WIDTH / cub->map.map_length_x));
-		map_y = (int)(ray_y / (MINIMAP_HEIGHT / cub->map.map_length_y));
-		while (cub->map.map[map_y][map_x] != '1' && ray_x > 0
-			&& ray_x < MINIMAP_WIDTH && ray_y > 0 && ray_y < MINIMAP_HEIGHT)
-		{
-			my_pixel_put((int)ray_x, (int)ray_y, &cub->mlx.img, color);
-			// Move the ray forward
-			ray_x += ray_dx * eps;
-			ray_y += ray_dy * eps;
-			map_x = (int)(ray_x / (MINIMAP_WIDTH / cub->map.map_length_x));
-			map_y = (int)(ray_y / (MINIMAP_HEIGHT / cub->map.map_length_y));
-		}
-		// Move to the next ray angle
-		ray_angle += angle_eps;
+		initialize_ray(cub);
+		cast_single_ray(cub, color);
+		update_ray_angle(cub);
 		i++;
 	}
 }

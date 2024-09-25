@@ -6,7 +6,7 @@
 /*   By: nkermani <nkermani@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/20 17:21:54 by nkermani          #+#    #+#             */
-/*   Updated: 2024/08/22 14:14:16 by nkermani         ###   ########.fr       */
+/*   Updated: 2024/09/16 14:51:42 by nkermani         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,4 +32,14 @@ int	my_pixel_shade(int color)
 	blue = color & 0xFF;
 	grey = (red + green + blue) / 3;
 	return ((grey << 16) | (grey << 8) | grey);
+}
+
+int	get_pixel_color(t_image *img, int x, int y)
+{
+	char	*pixel;
+	int		color;
+
+	pixel = img->addr + (y * img->line_length + x * (img->bits_per_pixel / 8));
+	color = *(int *)pixel;
+	return (color);
 }
